@@ -160,6 +160,13 @@ async function resolveTelegramCommandAuth(params: {
   const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
   const messageThreadId = (msg as { message_thread_id?: number }).message_thread_id;
   const isForum = (msg.chat as { is_forum?: boolean }).is_forum === true;
+  const authThreadParams = buildTelegramThreadParams(
+    resolveTelegramThreadSpec({
+      isGroup,
+      isForum,
+      messageThreadId,
+    }),
+  );
   const groupAllowContext = await resolveTelegramGroupAllowFromContext({
     chatId,
     accountId,
@@ -182,7 +189,10 @@ async function resolveTelegramCommandAuth(params: {
   const sendAuthMessage = async (text: string) => {
     await withTelegramApiErrorLogging({
       operation: "sendMessage",
-      fn: () => bot.api.sendMessage(chatId, text),
+      fn: () =>
+        authThreadParams
+          ? bot.api.sendMessage(chatId, text, authThreadParams)
+          : bot.api.sendMessage(chatId, text),
     });
     return null;
   };
@@ -639,6 +649,16 @@ export const registerTelegramNativeCommands = ({
             return;
           }
           const chatId = msg.chat.id;
+          const messageThreadId = (msg as { message_thread_id?: number }).message_thread_id;
+          const msgIsGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
+          const msgIsForum = (msg.chat as { is_forum?: boolean }).is_forum === true;
+          const commandNotFoundThreadParams = buildTelegramThreadParams(
+            resolveTelegramThreadSpec({
+              isGroup: msgIsGroup,
+              isForum: msgIsForum,
+              messageThreadId,
+            }),
+          );
           const rawText = ctx.match?.trim() ?? "";
           const commandBody = `/${pluginCommand.command}${rawText ? ` ${rawText}` : ""}`;
           const match = matchPluginCommand(commandBody);
@@ -646,7 +666,10 @@ export const registerTelegramNativeCommands = ({
             await withTelegramApiErrorLogging({
               operation: "sendMessage",
               runtime,
-              fn: () => bot.api.sendMessage(chatId, "Command not found."),
+              fn: () =>
+                commandNotFoundThreadParams
+                  ? bot.api.sendMessage(chatId, "Command not found.", commandNotFoundThreadParams)
+                  : bot.api.sendMessage(chatId, "Command not found."),
             });
             return;
           }
