@@ -93,6 +93,26 @@ describe("message tool path passthrough", () => {
   });
 });
 
+describe("message tool action parameter compatibility", () => {
+  it("rejects messageId for read to avoid silent ignores", async () => {
+    mocks.runMessageAction.mockClear();
+
+    const tool = createMessageTool({
+      config: {} as never,
+    });
+
+    await expect(
+      tool.execute("1", {
+        action: "read",
+        target: "slack:C123",
+        messageId: "171234.567",
+      }),
+    ).rejects.toThrow("messageId is not supported for action=read");
+
+    expect(mocks.runMessageAction).not.toHaveBeenCalled();
+  });
+});
+
 describe("message tool schema scoping", () => {
   const telegramPlugin: ChannelPlugin = {
     id: "telegram",

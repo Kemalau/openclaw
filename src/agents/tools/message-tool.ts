@@ -39,6 +39,28 @@ const EXPLICIT_TARGET_ACTIONS = new Set<ChannelMessageActionName>([
 function actionNeedsExplicitTarget(action: ChannelMessageActionName): boolean {
   return EXPLICIT_TARGET_ACTIONS.has(action);
 }
+
+function hasProvidedParam(params: Record<string, unknown>, key: string): boolean {
+  const value = params[key];
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  return value !== undefined && value !== null;
+}
+
+function validateActionParamCompatibility(
+  action: ChannelMessageActionName,
+  params: Record<string, unknown>,
+): void {
+  // `read` currently does not support messageId across channel adapters; fail fast
+  // so callers do not assume scoped reads succeeded.
+  if (action === "read" && hasProvidedParam(params, "messageId")) {
+    throw new Error(
+      "messageId is not supported for action=read. Use before/after/around/threadId filters instead.",
+    );
+  }
+}
+
 function buildRoutingSchema() {
   return {
     channel: Type.Optional(Type.String()),
@@ -599,6 +621,7 @@ export function createMessageTool(options?: MessageToolOptions): AnyAgentTool {
       const action = readStringParam(params, "action", {
         required: true,
       }) as ChannelMessageActionName;
+      validateActionParamCompatibility(action, params);
       const requireExplicitTarget = options?.requireExplicitTarget === true;
       if (requireExplicitTarget && actionNeedsExplicitTarget(action)) {
         const explicitTarget =
