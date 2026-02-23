@@ -21,6 +21,21 @@ const log = createSubsystemLogger("agents/tool-images");
 // This regex ensures = only appears at the end as valid padding
 const BASE64_REGEX = /^[A-Za-z0-9+/]*={0,2}$/;
 
+function parseImageDimensions(meta: { width: number; height: number } | null): {
+  width: number;
+  height: number;
+} | null {
+  const width = Number(meta?.width ?? 0);
+  const height = Number(meta?.height ?? 0);
+  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+    return null;
+  }
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
+  return { width, height };
+}
+
 /**
  * Validates and normalizes base64 image data before processing.
  * - Strips data URL prefixes (e.g., "data:image/png;base64,")
@@ -113,16 +128,20 @@ async function resizeImageBase64IfNeeded(params: {
   height?: number;
 }> {
   const buf = Buffer.from(params.base64, "base64");
-  const meta = await getImageMetadata(buf);
-  const width = meta?.width;
-  const height = meta?.height;
+  const inputDimensions = parseImageDimensions(await getImageMetadata(buf));
+  const width = inputDimensions?.width;
+  const height = inputDimensions?.height;
   const overBytes = buf.byteLength > params.maxBytes;
-  const hasDimensions = typeof width === "number" && typeof height === "number";
+  const hasDimensions = Boolean(inputDimensions);
+  const inputOverMaxSide = Boolean(
+    inputDimensions &&
+      (inputDimensions.width > params.maxDimensionPx ||
+        inputDimensions.height > params.maxDimensionPx),
+  );
   if (
     hasDimensions &&
     !overBytes &&
-    width <= params.maxDimensionPx &&
-    height <= params.maxDimensionPx
+    !inputOverMaxSide
   ) {
     return {
       base64: params.base64,
@@ -134,7 +153,7 @@ async function resizeImageBase64IfNeeded(params: {
   }
   if (
     hasDimensions &&
-    (width > params.maxDimensionPx || height > params.maxDimensionPx || overBytes)
+    (inputOverMaxSide || overBytes)
   ) {
     log.warn("Image exceeds limits; resizing", {
       label: params.label,
@@ -153,7 +172,8 @@ async function resizeImageBase64IfNeeded(params: {
     .filter((v, i, arr) => v > 0 && arr.indexOf(v) === i)
     .toSorted((a, b) => b - a);
 
-  let smallest: { buffer: Buffer; size: number } | null = null;
+  let smallest: { buffer: Buffer; size: number; dimensions?: { width: number; height: number } } | null =
+    null;
   for (const side of sideGrid) {
     for (const quality of qualities) {
       const out = await resizeToJpeg({
@@ -162,10 +182,15 @@ async function resizeImageBase64IfNeeded(params: {
         quality,
         withoutEnlargement: true,
       });
+      const outDimensions = parseImageDimensions(await getImageMetadata(out));
+      const outputWithinMaxSide = outDimensions
+        ? outDimensions.width <= params.maxDimensionPx &&
+          outDimensions.height <= params.maxDimensionPx
+        : !inputOverMaxSide;
       if (!smallest || out.byteLength < smallest.size) {
-        smallest = { buffer: out, size: out.byteLength };
+        smallest = { buffer: out, size: out.byteLength, dimensions: outDimensions ?? undefined };
       }
-      if (out.byteLength <= params.maxBytes) {
+      if (out.byteLength <= params.maxBytes && outputWithinMaxSide) {
         log.info("Image resized", {
           label: params.label,
           width,
@@ -189,9 +214,16 @@ async function resizeImageBase64IfNeeded(params: {
   }
 
   const best = smallest?.buffer ?? buf;
+  const bestDimensions =
+    smallest?.dimensions ?? parseImageDimensions(await getImageMetadata(best)) ?? undefined;
+  const bestDimensionLabel = bestDimensions
+    ? `${bestDimensions.width}x${bestDimensions.height}px`
+    : "unknown dimensions";
   const maxMb = (params.maxBytes / (1024 * 1024)).toFixed(0);
   const gotMb = (best.byteLength / (1024 * 1024)).toFixed(2);
-  throw new Error(`Image could not be reduced below ${maxMb}MB (got ${gotMb}MB)`);
+  throw new Error(
+    `Image could not be reduced to <=${params.maxDimensionPx}px per side and <=${maxMb}MB (got ${gotMb}MB, ${bestDimensionLabel})`,
+  );
 }
 
 export async function sanitizeContentBlocksImages(
