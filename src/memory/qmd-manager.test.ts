@@ -2211,7 +2211,9 @@ describe("QmdMemoryManager", () => {
       close: () => {},
     };
 
-    await expect(manager.search("legacy", { sessionKey: "agent:main:slack:dm:u123" })).resolves.toEqual([
+    await expect(
+      manager.search("legacy", { sessionKey: "agent:main:slack:dm:u123" }),
+    ).resolves.toEqual([
       {
         path: "qmd/legacy-main/notes/legacy.md",
         startLine: 1,
