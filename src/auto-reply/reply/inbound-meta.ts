@@ -10,12 +10,21 @@ function safeTrim(value: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+function hasThreadContext(messageThreadId: unknown): boolean {
+  if (typeof messageThreadId === "number") {
+    return Number.isFinite(messageThreadId);
+  }
+  return Boolean(safeTrim(messageThreadId));
+}
+
 export function buildInboundMetaSystemPrompt(ctx: TemplateContext): string {
   const chatType = normalizeChatType(ctx.ChatType);
   const isDirect = !chatType || chatType === "direct";
   const messageId = safeTrim(ctx.MessageSid);
   const messageIdFull = safeTrim(ctx.MessageSidFull);
   const replyToId = safeTrim(ctx.ReplyToId);
+  const hasReplyContext =
+    Boolean(ctx.ReplyToBody) || Boolean(replyToId) || hasThreadContext(ctx.MessageThreadId);
   const chatId = safeTrim(ctx.OriginatingTo);
 
   // Keep system metadata strictly free of attacker-controlled strings (sender names, group subjects, etc.).
@@ -34,7 +43,7 @@ export function buildInboundMetaSystemPrompt(ctx: TemplateContext): string {
     flags: {
       is_group_chat: !isDirect ? true : undefined,
       was_mentioned: ctx.WasMentioned === true ? true : undefined,
-      has_reply_context: Boolean(ctx.ReplyToBody),
+      has_reply_context: hasReplyContext,
       has_forwarded_context: Boolean(ctx.ForwardedFrom),
       has_thread_starter: Boolean(safeTrim(ctx.ThreadStarterBody)),
       history_count: Array.isArray(ctx.InboundHistory) ? ctx.InboundHistory.length : 0,

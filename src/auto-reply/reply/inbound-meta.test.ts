@@ -76,6 +76,38 @@ describe("buildInboundMetaSystemPrompt", () => {
     expect(payload["message_id"]).toBe("short-id");
     expect(payload["message_id_full"]).toBe("full-provider-message-id");
   });
+
+  it("marks has_reply_context when reply_to_id exists even without reply body", () => {
+    const prompt = buildInboundMetaSystemPrompt({
+      MessageSid: "reply-1",
+      ReplyToId: "$matrix-reply-id",
+      OriginatingTo: "room:!room:example",
+      OriginatingChannel: "matrix",
+      Provider: "matrix",
+      Surface: "matrix",
+      ChatType: "thread",
+    } as TemplateContext);
+
+    const payload = parseInboundMetaPayload(prompt);
+    const flags = payload["flags"] as { has_reply_context?: boolean } | undefined;
+    expect(flags?.has_reply_context).toBe(true);
+  });
+
+  it("marks has_reply_context when thread id exists", () => {
+    const prompt = buildInboundMetaSystemPrompt({
+      MessageSid: "thread-1",
+      MessageThreadId: "$thread-root-id",
+      OriginatingTo: "room:!room:example",
+      OriginatingChannel: "matrix",
+      Provider: "matrix",
+      Surface: "matrix",
+      ChatType: "thread",
+    } as TemplateContext);
+
+    const payload = parseInboundMetaPayload(prompt);
+    const flags = payload["flags"] as { has_reply_context?: boolean } | undefined;
+    expect(flags?.has_reply_context).toBe(true);
+  });
 });
 
 describe("buildInboundUserContextPrefix", () => {
