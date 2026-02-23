@@ -1224,7 +1224,7 @@ Set `agents.defaults.sandbox.docker.binds` to `["host:path:mode"]` (e.g., `"/hom
 OpenClaw memory is just Markdown files in the agent workspace:
 
 - Daily notes in `memory/YYYY-MM-DD.md`
-- Curated long-term notes in `MEMORY.md` (main/private sessions only)
+- Curated long-term notes in `MEMORY.md` (loaded in regular sessions; excluded from `subagent:*` and `cron:*`)
 
 OpenClaw also runs a **silent pre-compaction memory flush** to remind the model
 to write durable notes before auto-compaction. This only runs when the workspace

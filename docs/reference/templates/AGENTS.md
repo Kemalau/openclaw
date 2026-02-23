@@ -20,7 +20,7 @@ Before doing anything else:
 1. Read `SOUL.md` — this is who you are
 2. Read `USER.md` — this is who you're helping
 3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+4. For regular sessions (DM + group/channel), also read `MEMORY.md` when present. For `subagent:*` and `cron:*` sessions, it is not injected.
 
 Don't ask permission. Just do it.
 
@@ -35,10 +35,10 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 
 ### 🧠 MEMORY.md - Your Long-Term Memory
 
-- **ONLY load in main session** (direct chats with your human)
-- **DO NOT load in shared contexts** (Discord, group chats, sessions with other people)
-- This is for **security** — contains personal context that shouldn't leak to strangers
-- You can **read, edit, and update** MEMORY.md freely in main sessions
+- **Loaded in regular sessions** (DM + group/channel)
+- **Not loaded in `subagent:*` or `cron:*` sessions** (minimal bootstrap applies there)
+- Keep sensitive data out of `MEMORY.md` unless explicitly required; regular sessions can include shared channels.
+- You can **read, edit, and update** `MEMORY.md` freely in regular sessions.
 - Write significant events, thoughts, decisions, opinions, lessons learned
 - This is your curated memory — the distilled essence, not raw logs
 - Over time, review your daily files and update MEMORY.md with what's worth keeping

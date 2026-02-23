@@ -103,7 +103,8 @@ These are the standard files OpenClaw expects inside the workspace:
 
 - `MEMORY.md` (optional)
   - Curated long-term memory.
-  - Only load in the main, private session (not shared/group contexts).
+  - Loaded in regular sessions (including DM/group channel sessions).
+  - Not loaded for `subagent:*` or `cron:*` sessions (minimal bootstrap only).
 
 See [Memory](/concepts/memory) for the workflow and automatic memory flush.
 

@@ -233,14 +233,14 @@ Once DMs are working, you can set up your Discord server as a full workspace whe
   </Step>
 
   <Step title="Plan for memory in guild channels">
-    By default, long-term memory (MEMORY.md) only loads in DM sessions. Guild channels do not auto-load MEMORY.md.
+    By default, long-term memory (`MEMORY.md`) is loaded in regular Discord sessions (DM + guild channels). It is not loaded for `subagent:*` or `cron:*` sessions.
 
     <Tabs>
       <Tab title="Ask your agent">
-        > "When I ask questions in Discord channels, use memory_search or memory_get if you need long-term context from MEMORY.md."
+        > "When answering in Discord channels, use memory_search or memory_get when you need targeted context from MEMORY.md."
       </Tab>
       <Tab title="Manual">
-        If you need shared context in every channel, put the stable instructions in `AGENTS.md` or `USER.md` (they are injected for every session). Keep long-term notes in `MEMORY.md` and access them on demand with memory tools.
+        Keep stable, always-on instructions in `AGENTS.md` or `USER.md` (injected for every regular session). Keep `MEMORY.md` curated, and use memory tools for targeted recall.
       </Tab>
     </Tabs>
 
