@@ -32,12 +32,42 @@ describe("enablePluginInConfig", () => {
     expect(result.reason).toBe("blocked by denylist");
   });
 
-  it("writes built-in channels to channels.<id>.enabled instead of plugins.entries", () => {
+  it("enables built-in channel config and plugin entry together", () => {
     const cfg: OpenClawConfig = {};
     const result = enablePluginInConfig(cfg, "telegram");
     expect(result.enabled).toBe(true);
     expect(result.config.channels?.telegram?.enabled).toBe(true);
-    expect(result.config.plugins?.entries?.telegram).toBeUndefined();
+    expect(result.config.plugins?.entries?.telegram?.enabled).toBe(true);
+  });
+
+  it("re-enables a built-in channel plugin entry when it was disabled", () => {
+    const cfg: OpenClawConfig = {
+      channels: {
+        telegram: {
+          enabled: true,
+        },
+      },
+      plugins: {
+        entries: {
+          telegram: {
+            enabled: false,
+            config: {
+              keep: true,
+            },
+          },
+        },
+      },
+    };
+
+    const result = enablePluginInConfig(cfg, "telegram");
+    expect(result.enabled).toBe(true);
+    expect(result.config.channels?.telegram?.enabled).toBe(true);
+    expect(result.config.plugins?.entries?.telegram).toEqual({
+      enabled: true,
+      config: {
+        keep: true,
+      },
+    });
   });
 
   it("adds built-in channel id to allowlist when allowlist is configured", () => {
