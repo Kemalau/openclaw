@@ -59,6 +59,18 @@ describe("model-selection", () => {
         provider: "anthropic",
         model: "claude-sonnet-4-6",
       });
+      expect(parseModelRef("anthropic/haiku", "openai")).toEqual({
+        provider: "anthropic",
+        model: "claude-haiku-4-5",
+      });
+      expect(parseModelRef("haiku", "anthropic")).toEqual({
+        provider: "anthropic",
+        model: "claude-haiku-4-5",
+      });
+      expect(parseModelRef("haiku-3.5", "anthropic")).toEqual({
+        provider: "anthropic",
+        model: "claude-haiku-4-5",
+      });
     });
 
     it("should use default provider if none specified", () => {
