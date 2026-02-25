@@ -40,6 +40,13 @@ describe("markdownToSignalText", () => {
     expect(res.styles).toEqual([{ start: 6, length: 6, style: "SPOILER" }]);
   });
 
+  it("keeps unmatched spoiler delimiters as plain text", () => {
+    const res = markdownToSignalText("logic: a || b");
+
+    expect(res.text).toBe("logic: a || b");
+    expect(res.styles).toEqual([]);
+  });
+
   it("renders fenced code blocks with monospaced styles", () => {
     const res = markdownToSignalText("before\n\n```\nconst x = 1;\n```\n\nafter");
 

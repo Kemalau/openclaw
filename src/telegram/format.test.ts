@@ -94,4 +94,9 @@ describe("markdownToTelegramHtml", () => {
     const res = markdownToTelegramHtml("||**secret** text||");
     expect(res).toBe("<tg-spoiler><b>secret</b> text</tg-spoiler>");
   });
+
+  it("keeps unmatched spoiler delimiters as plain text", () => {
+    const res = markdownToTelegramHtml("logic: a || b");
+    expect(res).toBe("logic: a || b");
+  });
 });

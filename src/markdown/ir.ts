@@ -135,6 +135,25 @@ function createTextToken(base: MarkdownToken, content: string): MarkdownToken {
   return { ...base, type: "text", content, children: undefined };
 }
 
+function hasSpoilerDelimiterAhead(
+  tokens: MarkdownToken[],
+  tokenIndex: number,
+  contentOffset: number,
+): boolean {
+  for (let i = tokenIndex; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (token?.type !== "text") {
+      continue;
+    }
+    const content = token.content ?? "";
+    const start = i === tokenIndex ? Math.max(0, contentOffset) : 0;
+    if (content.indexOf("||", start) !== -1) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function applySpoilerTokens(tokens: MarkdownToken[]): void {
   for (const token of tokens) {
     if (token.children && token.children.length > 0) {
@@ -147,7 +166,8 @@ function injectSpoilersIntoInline(tokens: MarkdownToken[]): MarkdownToken[] {
   const result: MarkdownToken[] = [];
   const state = { spoilerOpen: false };
 
-  for (const token of tokens) {
+  for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
+    const token = tokens[tokenIndex];
     if (token.type !== "text") {
       result.push(token);
       continue;
@@ -171,11 +191,19 @@ function injectSpoilersIntoInline(tokens: MarkdownToken[]): MarkdownToken[] {
       if (next > index) {
         result.push(createTextToken(token, content.slice(index, next)));
       }
+      const afterDelimiter = next + 2;
+      // Treat unmatched opener as literal text so accidental "||" does not hide
+      // the rest of the message.
+      if (!state.spoilerOpen && !hasSpoilerDelimiterAhead(tokens, tokenIndex, afterDelimiter)) {
+        result.push(createTextToken(token, "||"));
+        index = afterDelimiter;
+        continue;
+      }
       state.spoilerOpen = !state.spoilerOpen;
       result.push({
         type: state.spoilerOpen ? "spoiler_open" : "spoiler_close",
       });
-      index = next + 2;
+      index = afterDelimiter;
     }
   }
 
